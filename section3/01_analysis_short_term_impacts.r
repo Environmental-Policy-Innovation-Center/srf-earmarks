@@ -150,7 +150,7 @@ summary_plot_data <- tibble(
   mutate(category = factor(category, levels = c("Available to States", "Earmarked")))
 
 plot_fig1 <- ggplot(summary_plot_data, aes(x = year, y = total_pct, fill = category)) +
-  geom_chicklet(position = "dodge") +
+  geom_col(position = "dodge") +
   scale_fill_manual(values = report_colors) +
   scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) +
   labs(
@@ -178,7 +178,7 @@ state_shifts_data <- srf_funding_data %>%
   mutate(state = factor(state, levels = unique(state)))
 
 plot_fig2 <- ggplot(state_shifts_data, aes(x = state, y = total_difference, fill = impact_type)) +
-  geom_chicklet(width = 0.75) +
+  geom_col(width = 0.75) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
   geom_text(
     aes(label = label_millions, y = total_difference + ifelse(total_difference >= 0, 4e6, -4e6)),
@@ -295,7 +295,7 @@ pf_impact_data <- srf_funding_data %>%
   )
 
 plot_fig7 <- ggplot(pf_impact_data, aes(x = reorder(state, impact_value), y = impact_value / 1e6, fill = impact_type)) +
-  geom_chicklet(position = "dodge", alpha = 0.9) +
+  geom_col(position = "dodge", alpha = 0.9) +
   coord_flip() +
   scale_fill_manual(values = report_colors) +
   scale_y_continuous(labels = label_dollar(suffix = "M")) +

@@ -5,7 +5,7 @@
 # It fetches data from the U.S. Census, loads project data, matches each
 # project to a Census-defined place, and exports the final combined dataset.
 
-# Methods explained in Appendix
+# Methods explained in Appendix of report
 # =============================================================================
 
 
@@ -19,7 +19,7 @@ library(tidycensus)
 library(janitor)
 
 # Set the Census API key for data retrieval
-census_api_key("67edccb9e10b4f212af64445ef8c9b6b7038715f", install = TRUE)
+census_api_key("67edccb9e10b4f212af64445ef8c9b6b7038715f")
 
 
 #### FUNCTIONS ####
@@ -100,11 +100,13 @@ census_data <- census_data %>%
     place_name = str_replace(NAME, "\\s+(CDP|city|town|village|borough)?\\s*,.*$", "")
   )
 
+#Can also create a backup of data so don't need to load it every run
+#write_csv(census_data,"census_data.csv")
 
 #### 2. LOAD, COMBINE, AND MATCH PROJECT DATA ####
 
 # Load Earmarks Data (DW and CW)
-earmarks_23 <- read_excel("section3/raw_data/earmarks_data.xlsx", sheet = "cds_23") %>%
+earmarks_23 <- read_excel("raw_data/earmarks_data.xlsx", sheet = "cds_23") %>%
   clean_names() %>%
   mutate(
     program = case_when(
@@ -115,7 +117,7 @@ earmarks_23 <- read_excel("section3/raw_data/earmarks_data.xlsx", sheet = "cds_2
   ) %>%
   transmute(state_abbr = state, description = project, type = "earmark", program, fy = 23)
 
-earmarks_24 <- read_excel("section3/raw_data/earmarks_data.xlsx", sheet = "cds_24") %>%
+earmarks_24 <- read_excel("raw_data/earmarks_data.xlsx", sheet = "cds_24") %>%
   clean_names() %>%
   mutate(
     program = case_when(
@@ -127,30 +129,38 @@ earmarks_24 <- read_excel("section3/raw_data/earmarks_data.xlsx", sheet = "cds_2
   transmute(state_abbr = state, description = project, type = "earmark", program, fy = 24)
 
 # Load Drinking Water (DW) SRF Data
-dw_srf_23 <- read_excel("section3/raw_data/National_Drinking Water Assistance Agreement Detail Report_FY23.xlsx", skip = 4) %>%
+dw_srf_23 <- read_excel("raw_data/National_Drinking Water Assistance Agreement Detail Report_FY23.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = city, type = "srf", program = "DW", fy = 23)
 
-dw_srf_24 <- read_excel("section3/raw_data/National_Drinking Water Assistance Agreement Detail Report_FY24.xlsx", skip = 4) %>%
+dw_srf_24 <- read_excel("raw_data/National_Drinking Water Assistance Agreement Detail Report_FY24.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = city, type = "srf", program = "DW", fy = 24)
 
 # Load Clean Water (CW) SRF Data
-cw_srf_23 <- read_excel("section3/raw_data/FY23_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
+cw_srf_23 <- read_excel("raw_data/FY23_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = borrower_name, type = "srf", program = "CW", fy = 23)
 
-cw_srf_24 <- read_excel("section3/raw_data/FY24_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
+cw_srf_24 <- read_excel("raw_data/FY24_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = borrower_name, type = "srf", program = "CW", fy = 24)
 
 # Combine all project data sources
-all_projects <- bind_rows(earmarks_23, earmarks_24, dw_srf_23, dw_srf_24, cw_srf_23, cw_srf_24) %>%
+all_projects_raw <- bind_rows(earmarks_23, earmarks_24, dw_srf_23, dw_srf_24, cw_srf_23, cw_srf_24)
+
+# Add initial counter  
+count_initial_rows <- nrow(all_projects_raw)
+
+all_projects <- all_projects_raw %>%
   filter(state_abbr %in% states_of_interest, !is.na(program))
+
+# Add counter after initial filtering  
+count_in_scope <- nrow(all_projects)
 
 # Match all projects to their Census place
 match_results <- purrr::map2_dfr(
@@ -161,17 +171,51 @@ match_results <- purrr::map2_dfr(
 
 all_projects <- bind_cols(all_projects, match_results)
 
+# Count how many projects failed to match  
+count_unmatched <- sum(is.na(all_projects$Matched_GEOID))
+
 
 #### 3. CREATE AND EXPORT FINAL DATASET ####
 
 # Join project data with demographics and select final columns
-final_project_data <- all_projects %>%
+projects_before_distinct <- all_projects %>%
   select(program, type, fy, state_abbr, GEOID = Matched_GEOID) %>%
-  filter(!is.na(GEOID)) %>%
+  filter(!is.na(GEOID))
+
+# Add counter for matched projects
+count_matched_before_distinct <- nrow(projects_before_distinct)
+
+final_project_data <- projects_before_distinct %>%
   distinct() %>%
   left_join(census_data, by = c("GEOID", "state_abbr"))
 
-# Export the final dataset to a CSV file
-#write_csv(final_project_data, "section3/raw_data/prj_level_dem_data.csv")
+# Add final counter  
+count_final <- nrow(final_project_data)
 
-message("Project-level demographic data preparation is complete.")
+#### 4. DIAGNOSTIC REPORTING ####
+
+# Calculate attrition numbers
+dropped_by_filter <- count_initial_rows - count_in_scope
+dropped_by_dedupe <- count_matched_before_distinct - count_final
+retention_rate <- (count_final / count_in_scope) * 100
+
+# Print a summary report to the console
+message("\n---")
+message("Data Attrition & Matching Report")
+message("---")
+message(paste0("1. Initial project entries loaded: ", format(count_initial_rows, big.mark = ",")))
+message(paste0("   - Dropped (invalid state/program): ", format(dropped_by_filter, big.mark = ",")))
+message("--------------------------------------------------")
+message(paste0("2. Projects in scope for analysis: ", format(count_in_scope, big.mark = ",")))
+message(paste0("   - Failed to match a Census place: ", format(count_unmatched, big.mark = ",")))
+message(paste0("   - Successfully matched: ", format(count_matched_before_distinct, big.mark = ",")))
+message("--------------------------------------------------")
+message(paste0("3. Matched projects after removing duplicates: ", format(count_final, big.mark = ",")))
+message(paste0("   - Dropped by deduplication: ", format(dropped_by_dedupe, big.mark = ",")))
+message("--------------------------------------------------")
+message(sprintf("Final Retention Rate (final / in-scope): %.1f%%", retention_rate))
+message("---\n")
+
+
+# Export the final dataset to a CSV file
+write_csv(final_project_data, "raw_data/prj_level_dem_data.csv") 

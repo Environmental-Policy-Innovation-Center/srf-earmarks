@@ -58,7 +58,7 @@ expected_files <- c(
 state_codes_from_names <- str_extract(expected_files, "^[A-Z]{2}")
 
 # --- Set data directory path ---
-data_directory <- "section4/raw_data/dw_state_data"
+data_directory <- "raw_data/dw_state_data"
 
 # --- File Discovery Loop ---
 # Iterate through expected files, check if they exist, and store paths of found files.
@@ -137,7 +137,7 @@ calculate_loan_payment <- function(principal, annual_rate_pct, term_years) {
 load_state_data <- function(state_abbr) {
   # --- Load Earmarks Data ---
   # Assumes a CSV file named 'earmarks_data.csv' exists in 'raw_data/'.
-  earmarks_data <- read_csv("section4/raw_data/earmarks_data.csv") %>%
+  earmarks_data <- read_csv("raw_data/earmarks_data.csv") %>%
     mutate(state_abbr = if_else(is.na(state_abbr),
                                 state.abb[match(state, state.name)], # Convert state name to abbreviation if needed
                                 state_abbr)) %>%
@@ -397,7 +397,7 @@ state_summary_table <- impact %>%
     `Loss-to-Gain Ratio` = paste0(round(abs(net_financial_impact)/abs(net_funding_change), 2), ":1")
   )
 
-#write_csv(state_summary_table, "4_DW_state_summary.csv")
+write_csv(state_summary_table, "4_DW_state_summary.csv")
 
 
 #### Waterfall Plot Generation ####
@@ -490,21 +490,21 @@ waterfall_plot <- ggplot(waterfall, aes(y = state)) +
 
 # --- Save Final Output ---
 output_plot_filename <- "dw_waterfall_plot.png"
-# ggsave(
-#   filename = output_plot_filename,
-#   plot = waterfall_plot,
-#   width = 6,
-#   height = 5,   
-#   units = "in",
-#   dpi = 300
-# )
+ggsave(
+  filename = output_plot_filename,
+  plot = waterfall_plot,
+  width = 6,
+  height = 5,   
+  units = "in",
+  dpi = 300
+)
 
 print(waterfall_plot)
 
-##### AL ####
+##### Maine Plot ####
 
 # --- Data Preparation for Alaska Separate Lines ---
-ak_repayment_comparison <- all_state_results %>%
+me_repayment_comparison <- all_state_results %>%
   filter(
     state == "ME",
     year %in% config$projection_years,
@@ -525,8 +525,8 @@ cat_palette <- colorRampPalette(c("#172f60","#1054a8",
                                   "#b15712","#4ea324"))
 
 # --- Create the EPIC Compliant Comparison Plot ---
-ak_comparison_plot_compliant <- 
-  ggplot(ak_repayment_comparison, aes(x = year, y = repayments, color = scenario, linetype = scenario)) +
+me_comparison_plot_compliant <- 
+  ggplot(me_repayment_comparison, aes(x = year, y = repayments, color = scenario, linetype = scenario)) +
   # Add lines and points for both scenarios
   geom_line(linewidth = 1.1) +
   geom_point(size = 2.5) +
@@ -582,15 +582,15 @@ ak_comparison_plot_compliant <-
   )
 
 # --- Save the New Plot with adjusted dimensions ---
-# ggsave(
-#   filename = "ak_dwsrf_repayment_comparison_compliant.png",
-#   plot = ak_comparison_plot_compliant,
-#   width = 8,
-#   height = 6,
-#   units = "in",
-#   dpi = 600 # DPI set to 600 per style guide
-# )
+ggsave(
+  filename = "me_dwsrf_repayment_comparison_compliant.png",
+  plot = me_comparison_plot_compliant,
+  width = 8,
+  height = 6,
+  units = "in",
+  dpi = 600 # DPI set to 600 per style guide
+)
 
 # Optional: Print the plot to view it
-print(ak_comparison_plot_compliant)
+print(me_comparison_plot_compliant)
 

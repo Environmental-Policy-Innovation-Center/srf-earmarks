@@ -19,7 +19,9 @@ library(tidycensus)
 library(janitor)
 
 # Set the Census API key for data retrieval
-census_api_key("67edccb9e10b4f212af64445ef8c9b6b7038715f")
+# Data also available via census_data.csv in root
+
+census_api_key("YOUR CENSUS KEY")
 
 
 #### FUNCTIONS ####
@@ -106,7 +108,7 @@ census_data <- census_data %>%
 #### 2. LOAD, COMBINE, AND MATCH PROJECT DATA ####
 
 # Load Earmarks Data (DW and CW)
-earmarks_23 <- read_excel("raw_data/earmarks_data.xlsx", sheet = "cds_23") %>%
+earmarks_23 <- read_excel("section3/raw_data/earmarks_data.xlsx", sheet = "cds_23") %>%
   clean_names() %>%
   mutate(
     program = case_when(
@@ -117,7 +119,7 @@ earmarks_23 <- read_excel("raw_data/earmarks_data.xlsx", sheet = "cds_23") %>%
   ) %>%
   transmute(state_abbr = state, description = project, type = "earmark", program, fy = 23)
 
-earmarks_24 <- read_excel("raw_data/earmarks_data.xlsx", sheet = "cds_24") %>%
+earmarks_24 <- read_excel("section3/raw_data/earmarks_data.xlsx", sheet = "cds_24") %>%
   clean_names() %>%
   mutate(
     program = case_when(
@@ -129,23 +131,23 @@ earmarks_24 <- read_excel("raw_data/earmarks_data.xlsx", sheet = "cds_24") %>%
   transmute(state_abbr = state, description = project, type = "earmark", program, fy = 24)
 
 # Load Drinking Water (DW) SRF Data
-dw_srf_23 <- read_excel("raw_data/National_Drinking Water Assistance Agreement Detail Report_FY23.xlsx", skip = 4) %>%
+dw_srf_23 <- read_excel("section3/raw_data/National_Drinking Water Assistance Agreement Detail Report_FY23.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = city, type = "srf", program = "DW", fy = 23)
 
-dw_srf_24 <- read_excel("raw_data/National_Drinking Water Assistance Agreement Detail Report_FY24.xlsx", skip = 4) %>%
+dw_srf_24 <- read_excel("section3/raw_data/National_Drinking Water Assistance Agreement Detail Report_FY24.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = city, type = "srf", program = "DW", fy = 24)
 
 # Load Clean Water (CW) SRF Data
-cw_srf_23 <- read_excel("raw_data/FY23_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
+cw_srf_23 <- read_excel("section3/raw_data/FY23_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = borrower_name, type = "srf", program = "CW", fy = 23)
 
-cw_srf_24 <- read_excel("raw_data/FY24_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
+cw_srf_24 <- read_excel("section3/raw_data/FY24_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = borrower_name, type = "srf", program = "CW", fy = 24)
@@ -218,4 +220,4 @@ message("---\n")
 
 
 # Export the final dataset to a CSV file
-write_csv(final_project_data, "raw_data/prj_level_dem_data.csv") 
+write_csv(final_project_data, "section3/raw_data/prj_level_dem_data.csv") 

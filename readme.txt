@@ -45,3 +45,5 @@ Step 3: Run Long-Term Cash Flow Models
 4_DW.R and 4_CW.R run the 20-year cash flow models for the DWSRF and CWSRF programs, respectively. They can be run independently of each other and of the short-term analysis script.
 
 The methodology is explained in the appendix of the report. 
+
+EPIC makes no assurances to the accuracy of the data. All underlying code, methods, and data are available under a Creative Commons License.

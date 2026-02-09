@@ -26,13 +26,7 @@ library(showtext)  # For custom font support in plots
 # ==============================================================================
 config <- list(
   # Define the states to include in the analysis
-  target_states = c(
-    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
-    'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
-    'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
-    'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
-    'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
-  ),
+  target_states = c("AK", "CT", "FL", "IL", "MD", "ME", "OK", "OR", "TX", "WA"),
   
   # Financial assumptions
   set_asides_pct = 0.15,       # Percentage of capital grant allocated to set-asides
@@ -40,8 +34,8 @@ config <- list(
   repayment_start_lag = 3,     # Years between loan execution and first repayment
   
   # Time period definitions
-  historical_years = 2000:2025,   # Years for historical data analysis
-  projection_years = 2026:2045,   # Years for future cash flow modeling
+  historical_years = 2000:2024,   # Years for historical data analysis
+  projection_years = 2025:2044,   # Years for future cash flow modeling
   baseline_period = 2003:2022,    # Historical years used to calculate future averages
   exclude_years = 2009            # Year(s) to exclude from baseline calculation (e.g., financial crisis)
 )
@@ -54,12 +48,17 @@ config <- list(
 cat("Loading all Excel files...\n")
 
 # --- Define expected filenames based on state codes ---
-expected_files <- list.files(path = "data-updates/raw-data/cw_state_data", full.names = FALSE)
-
+expected_files <- c(
+  "AK_CW State_National Report.xlsx", "CT_CW State_National Report.xlsx",
+  "FL_CW State_National Report.xlsx", "IL_CW State_National Report.xlsx",
+  "MD_CW State_National Report.xlsx", "ME_CW State_National Report.xlsx",
+  "OK_CW State_National Report.xlsx", "OR_CW State_National Report.xlsx",
+  "TX_CW State_National Report.xlsx", "WA_CW State_National Report.xlsx"
+)
 state_codes_from_names <- str_extract(expected_files, "^[A-Z]{2}")
 
 # --- Set data directory path ---
-data_directory <- "data-updates/raw-data/cw_state_data"
+data_directory <- "section4/raw_data/cw_state_data"
 
 # --- File Discovery Loop ---
 # Iterate through expected files, check if they exist, and store paths of found files.
@@ -138,7 +137,7 @@ calculate_loan_payment <- function(principal, annual_rate_pct, term_years) {
 load_state_data <- function(state_abbr) {
   # --- Load Earmarks Data ---
   # Assumes a CSV file named 'earmarks_data.csv' exists in 'raw_data/'.
-  earmarks_data <- read.csv("data-updates/clean-data/srf_funding_data_v1.csv") %>%
+  earmarks_data <- read_csv("section4/raw_data/earmarks_data.csv") %>%
     mutate(state_abbr = if_else(is.na(state_abbr),
                                 state.abb[match(state, state.name)], # Convert state name to abbreviation if needed
                                 state_abbr)) %>%
@@ -207,9 +206,8 @@ create_projections <- function(historical_data) {
                      ~mean(.x, na.rm = TRUE)))
   
   # Project earmarks based on a more recent period (e.g., last 2 years).
-  ## updated to 2025
   recent_earmarks <- historical_data %>%
-    filter(year %in% 2023:2025) %>%
+    filter(year %in% 2023:2024) %>%
     summarise(
       avg_earmarks = mean(earmarks, na.rm = TRUE),
       avg_impact = mean(earmark_impact, na.rm = TRUE)
@@ -431,7 +429,7 @@ fill_legend_order <- c(
 )
 
 # --- Create Plot Object ---
-cw_waterfall_plot <- ggplot(waterfall, aes(y = state)) +
+waterfall_plot <- ggplot(waterfall, aes(y = state)) +
   
   # Layers 1-4 (Geoms and vline)
   geom_col(aes(x = funding_change_positive / 1e6, fill = "Increased Funding"), width = 0.3, alpha = 0.8) +
@@ -495,12 +493,12 @@ cw_waterfall_plot <- ggplot(waterfall, aes(y = state)) +
   )
 
 # --- Save Final Output ---
-output_plot_filename <- "cw_waterfall_plot_25.png"
-ggsave(
-  filename = output_plot_filename,
-  plot = cw_waterfall_plot,
-  width = 6,
-  height = 10,
-  units = "in",
-  dpi = 300
-)
+# output_plot_filename <- "cw_waterfall_plot.png"
+# ggsave(
+#   filename = output_plot_filename,
+#   plot = waterfall_plot,
+#   width = 6,
+#   height = 5,
+#   units = "in",
+#   dpi = 300
+# )

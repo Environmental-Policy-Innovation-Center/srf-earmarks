@@ -58,9 +58,13 @@ report_theme <- theme_minimal(base_family = "Lato", base_size = 12) +
 
 # Define file path and base funding totals from the report
 file_path <- "section3/raw_data/earmarks_data.xlsx" #see metadata tab for source info
+
+## ok we assume this is state totals from srf dashboard + earmarks but the numbers are slightly off - putting placeholders for now
+
 fy_totals <- list(
   FY23 = list(dw = 1103040899, cw = 1620845642),
-  FY24 = list(dw = 1103833905, cw = 1619480267)
+  FY24 = list(dw = 1103833905, cw = 1619480267),
+  FY25 = list(dw = 1090579000, cw = 1602584000) ## Pulled from here https://www.epa.gov/system/files/documents/2025-05/fy2025-srf-allotment-tables.pdf
 )
 
 # Load and combine state SRF allotment data
@@ -68,25 +72,34 @@ allotment_sheets <- list(
   dw_23 = read_excel(file_path, sheet = "DW_23_cap"),
   cw_23 = read_excel(file_path, sheet = "CW_23_cap"),
   dw_24 = read_excel(file_path, sheet = "DW_24_cap"),
-  cw_24 = read_excel(file_path, sheet = "CW_24_cap")
-)
+  cw_24 = read_excel(file_path, sheet = "CW_24_cap"),
+  dw_25 = read.csv("data-updates/clean-data/dw_25_cap_v1.csv"),
+  cw_25 = read.csv("data-updates/clean-data/cw_25_cap_v1.csv"))
+
 allotments <- bind_rows(
   allotment_sheets$dw_23 %>% mutate(fy = "FY23", program = "DWSRF"),
   allotment_sheets$cw_23 %>% mutate(fy = "FY23", program = "CWSRF"),
   allotment_sheets$dw_24 %>% mutate(fy = "FY24", program = "DWSRF"),
-  allotment_sheets$cw_24 %>% mutate(fy = "FY24", program = "CWSRF")
-) %>%
+  allotment_sheets$cw_24 %>% mutate(fy = "FY24", program = "CWSRF"), 
+  allotment_sheets$dw_25 %>% mutate(fy = "FY25", program = "DWSRF"),
+  allotment_sheets$cw_25 %>% mutate(fy = "FY25", program = "CWSRF")) %>%
   clean_names() %>%
   mutate(state = str_to_title(state))
+
+## ckeck
+allotments_check <- allotments %>%
+                    group_by(fy,program)%>%
+                   summarise(allotment = sum(allotment), pct = sum(pct))
 
 # Load and process earmark data
 earmark_sheets <- list(
   cds_23 = read_excel(file_path, sheet = "cds_23"),
-  cds_24 = read_excel(file_path, sheet = "cds_24")
-)
+  cds_24 = read_excel(file_path, sheet = "cds_24"),
+  cds_25 = read.csv("data-updates/clean-data/earmarks_25_v1.csv"))
 earmarks <- bind_rows(
   earmark_sheets$cds_23 %>% mutate(fy = "FY23"),
-  earmark_sheets$cds_24 %>% mutate(fy = "FY24")
+  earmark_sheets$cds_24 %>% mutate(fy = "FY24"),
+  earmark_sheets$cds_25 %>% mutate(fy = "FY25")
 ) %>%
   clean_names() %>%
   filter(account != "STAG—Other (CDS)") %>% #removes the few non-SRF CDS projects
@@ -101,14 +114,24 @@ earmarks <- bind_rows(
     )
   )
 
+## Summarizing as a helpful sheet 
+earmarks_summary <- earmarks %>%
+                    group_by(fy,program)%>%
+                    summarise(total_earmarks = sum(total_earmarks, na.rm = TRUE))
+
+
 # Calculate hypothetical allotments and merge with earmarks to get final dataset
 srf_funding_data <- allotments %>%
   mutate(
+    # Add state abbreviation column
+    state_abbr = state.abb[match(state, state.name)],
     base_total = case_when(
       program == "DWSRF" & fy == "FY23" ~ fy_totals$FY23$dw,
       program == "CWSRF" & fy == "FY23" ~ fy_totals$FY23$cw,
       program == "DWSRF" & fy == "FY24" ~ fy_totals$FY24$dw,
-      program == "CWSRF" & fy == "FY24" ~ fy_totals$FY24$cw
+      program == "CWSRF" & fy == "FY24" ~ fy_totals$FY24$cw,
+      program == "DWSRF" & fy == "FY25" ~ fy_totals$FY25$dw,
+      program == "CWSRF" & fy == "FY25" ~ fy_totals$FY25$cw
     ),
     hypothetical = pct * base_total
   ) %>%
@@ -116,13 +139,22 @@ srf_funding_data <- allotments %>%
   mutate(
     total_earmarks = replace_na(total_earmarks, 0),
     actual_total = allotment + total_earmarks,
-    difference = actual_total - hypothetical
+    difference = actual_total - hypothetical,
+    diff_as_pct = difference / hypothetical,
+    bar_color = ifelse(diff_as_pct > 0, "Positive", "Negative")
   )
+
+## Check - ok something is not right.. 
+srf_funding_check <- srf_funding_data %>%
+                    group_by(fy,program,bar_color)%>%
+                    tally()
+
+write.csv(srf_funding_data, "data-updates/clean-data/srf_funding_data_v1.csv")
 
 # --- 2.2 Project-Level Demographic Data (For Section 3.2) ---
 # NOTE: This section loads a pre-processed CSV file for efficiency.
 # The original script for generating this is in file 00_prj_level_dem_data.
-project_demographics_data <- read_csv("section3/raw_data/prj_level_dem_data.csv")
+project_demographics_data <- read_csv("section3/raw_data/prj_level_dem_data_2026_update.csv")
 
 
 #### 3. ANALYSIS AND VISUALIZATION ####
@@ -130,7 +162,8 @@ project_demographics_data <- read_csv("section3/raw_data/prj_level_dem_data.csv"
 # --- 3.0 SUMMARY: OVERALL FUNDING TRENDS (REPORT FIGURE 1) ---
 message("Generating Figure 1: Overall Funding Trends...")
 
-# Data is based on CW/DW calculations shown in table before figure; combined & weighted here
+# Data is based on CW/DW calculations shown in table before figure; combined & weighted here by the base amount (same for fy23 - fy25)
+
 summary_plot_data <- tibble(
   program = c("CWSRF", "CWSRF", "DWSRF", "DWSRF"),
   category = c("Available to States", "Earmarked", "Available to States", "Earmarked"),
@@ -138,11 +171,12 @@ summary_plot_data <- tibble(
   y2022 = c(73, 27, 65, 35),
   y2023 = c(47, 53, 46, 54),
   y2024 = c(52, 48, 44, 56),
-  y2025 = c(100, 0, 100, 0)
-) %>%
+  y2025 = c(33, 67, 44, 56))%>% ## DWSRF 2025 CDS Total: 732909627 DWSRF 2025 State Total: 1090579000 = 67% 
+                                 ## CWSRF 2025 CDS Total: 907905376 CWSRF 2025 State Total: 1602584000 = 56%
   pivot_longer(cols = starts_with("y"), names_to = "year", values_to = "percentage", names_prefix = "y") %>%
   mutate(
     weight = ifelse(program == "CWSRF", 1639, 1126) / (1639 + 1126),
+    ## insert value of total_approp_trimed for each program in millions (23/24 are the same)
     weighted_pct = percentage * weight
   ) %>%
   group_by(year, category) %>%
@@ -161,7 +195,7 @@ plot_fig1 <- ggplot(summary_plot_data, aes(x = year, y = total_pct, fill = categ
   report_theme
 
 print(plot_fig1)
-ggsave("report_figure_1.png", plot = plot_fig1, width = 5, height = 3.5, dpi = 300)
+ggsave("results-updates/report_figure_1_fy25.png", plot = plot_fig1, width = 5, height = 3.5, dpi = 300)
 
 # --- 3.1 STATE-LEVEL SHIFTS (REPORT FIGURE 2) ---
 message("\nGenerating Figure 2: State-Level Net Funding Changes...")
@@ -202,7 +236,8 @@ plot_fig2 <- ggplot(state_shifts_data, aes(x = state, y = total_difference, fill
 
 
 print(plot_fig2)
-#ggsave("report_figure_2.png", plot = plot_fig2, width = 6, height = 8, dpi = 300)
+## Noting things look weird here.. - shouldn't have so many winners need to investigate
+ggsave("results-updates/report_figure_2_fy25.png", plot = plot_fig2, width = 6, height = 8, dpi = 300)
 
 
 # --- 3.2 PROJECT-LEVEL SHIFTS (REPORT FIGURES 3-6) ---
@@ -229,7 +264,7 @@ plot_fig3 <- create_demographic_plot(
   "Population (under 50k)"
 )
 print(plot_fig3)
-#ggsave("report_figure_3.png", plot = plot_fig3, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/report_figure_3_fy25.png", plot = plot_fig3, width = 8, height = 6, dpi = 300)
 
 # Figure 4: Median Household Income
 plot_fig4 <- create_demographic_plot(
@@ -238,7 +273,7 @@ plot_fig4 <- create_demographic_plot(
   "Median Household Income ($)"
 )
 print(plot_fig4)
-#ggsave("report_figure_4.png", plot = plot_fig4, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/report_figure_4_fy25.png", plot = plot_fig4, width = 8, height = 6, dpi = 300)
 
 # Figure 5: Poverty Rate
 plot_fig5 <- create_demographic_plot(
@@ -247,7 +282,7 @@ plot_fig5 <- create_demographic_plot(
   "Percent Below Poverty Level"
 )
 print(plot_fig5)
-#ggsave("report_figure_5.png", plot = plot_fig5, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/report_figure_5_fy25.png", plot = plot_fig5, width = 8, height = 6, dpi = 300)
 
 # Figure 6: People of Color
 plot_fig6 <- create_demographic_plot(
@@ -256,13 +291,14 @@ plot_fig6 <- create_demographic_plot(
   "Percent People of Color"
 )
 print(plot_fig6)
-#ggsave("report_figure_6.png", plot = plot_fig6, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/report_figure_6_fy25.png", plot = plot_fig6, width = 8, height = 6, dpi = 300)
 
 
 # --- 3.4 PRINCIPAL FORGIVENESS (PF) IMPACT (REPORT FIGURE 7) ---
 message("\nGenerating Figure 7: Impact on Principal Forgiveness...")
 
 # Define PF set-aside rates
+## GW NEED TO SEE IF THESE CHANGE 
 pf_rates <- list(cwsrf_min = 0.10, cwsrf_max = 0.40, dwsrf_min = 0.12, dwsrf_max = 0.49)
 
 # Calculate PF impact
@@ -308,7 +344,7 @@ plot_fig7 <- ggplot(pf_impact_data, aes(x = reorder(state, impact_value), y = im
   theme(panel.grid.major.y = element_blank())
 
 print(plot_fig7)
-#ggsave("report_figure_7.png", plot = plot_fig7, width = 8, height = 10, dpi = 300)
+ggsave("results-updates/report_figure_7_fy25.png", plot = plot_fig7, width = 8, height = 10, dpi = 300)
 
 # =============================================================================
 # END OF SCRIPT

@@ -1,0 +1,204 @@
+
+
+
+
+## Libraries
+
+```{r}
+library(tidyverse)
+library(tabulapdf)
+library(paws)
+library(googlesheets4)
+library(stringr)
+```
+
+
+```{r}
+
+```
+## Extraction
+```{r}
+house_pdf <- file.choose()
+house_fy26_extract <- extract_tables(house_pdf, page = 1)
+
+
+senate_pdf <- file.choose()
+senate_fy26_extract <- extract_tables(senate_pdf, page = 1)
+```
+
+## Base Table Extraction Code via AWS TextExtract ##
+## Takes a pdf from S3, and does (the best it can) to extract into a list of tables ###
+```{r}
+
+### SET YOUR AWS CREDENTIALS ### 
+textract <- paws::textract()
+
+analyze_document <- function(bucket, file) {
+  
+  # Start analyzing the PDF.
+  resp <- textract$start_document_analysis(
+    DocumentLocation = list(
+      S3Object = list(Bucket = bucket, Name = file)
+    ),
+    FeatureTypes = "TABLES"
+  )
+  
+  print(resp)
+  
+  # Check that the analysis is done and get the result.
+  count <- 0
+  while (count < 30 && (!exists("result") || result$JobStatus == "IN_PROGRESS")) {
+    Sys.sleep(1)
+    result <- textract$get_document_analysis(
+      JobId = resp$JobId
+    ) 
+    count <- count + 1
+  }
+  
+  all_blocks <- result$Blocks
+  page_count <- 1
+  
+  # Add a safety counter to prevent infinite loops
+  max_pages <- 50  # Adjust based on expected document size
+  
+  while (!is.null(result$NextToken) && page_count < max_pages) {
+    result <- textract$get_document_analysis(
+      JobId = resp$JobId,
+      NextToken = result$NextToken
+    )
+    # Use append() instead of c() to properly flatten the list
+    all_blocks <- append(all_blocks, result$Blocks)
+    page_count <- page_count + 1
+    print(paste("Getting page", page_count, "- Total blocks:", length(all_blocks)))
+    
+    print(all_blocks)
+  }
+  
+  result$Blocks <- all_blocks
+  print(results)
+  return(result)
+}
+
+
+get_children <- function(block, data) {
+  if (length(block$Relationships) == 0) {
+    return(list())
+  }
+  idx <- which(sapply(block$Relationships, function(x) x$Type) == "CHILD")
+  if (!idx) {
+    return(list())
+  }
+  child_ids <- block$Relationships[[idx]]$Ids
+  result <- data[child_ids]
+  return(result)
+}
+
+get_tables <- function(analysis) {
+  tables <- list()
+  print(tables)
+  blocks <- analysis$Blocks
+  names(blocks) <- sapply(blocks, function(x) x$Id)
+
+  for (block in blocks) {
+    
+    if (block$BlockType == "TABLE") {
+      cells <- get_children(block, blocks)
+      rows <- max(sapply(cells, function(x) x$RowIndex))
+      cols <- max(sapply(cells, function(x) x$ColumnIndex))
+      table <- matrix(nrow = rows, ncol = cols)
+      
+      # 1. Go through a table's cells one-by-one
+      for (cell in cells) {
+        
+        # 2. Get the cell's contents
+        words <- get_children(cell, blocks)
+        text <- paste(sapply(words, function(x) x$Text), collapse = " ")
+        
+        # 3. Insert the cell contents into the matrix
+        row <- cell$RowIndex
+        col <- cell$ColumnIndex
+        table[row, col] <- text
+      }
+      tables <- c(tables, list(table))
+    }
+  }
+  return(tables)
+} 
+
+```
+
+
+## Procesing Senate through Extract - pushing to googlesheets for hand clean up, and then pulling back in here to save via project folder ##
+```{r}
+senate_earmarks <- analyze_document("water-team-data", "srf-earmarks/2026-earmarks/fy26_interior_cds.pdf")
+tables <- get_tables(senate_earmarks)
+senate_tables <- data.frame(tables[[10]])
+
+ss <- "16VSpaRJGbybgRvilsGngF1Rzu3mYTIWM02yZOnV-RdQ"
+
+# Write each table to a separate tab
+for (i in seq_along(tables)) {
+  sheet_write(as.data.frame(tables[[i]]), 
+              ss = ss, 
+              sheet = paste0("Table_", i))
+  
+  
+## Fixed issues and assembled by hand here -> https://docs.google.com/spreadsheets/d/16VSpaRJGbybgRvilsGngF1Rzu3mYTIWM02yZOnV-RdQ/edit?gid=0#gid=0
+## Downloaded into clean-data folder
+  
+senate_earmarks_clean <- read_sheet("https://docs.google.com/spreadsheets/d/16VSpaRJGbybgRvilsGngF1Rzu3mYTIWM02yZOnV-RdQ/edit?gid=0#gid=0")
+
+write.csv(senate_earmarks_clean, "clean-data/senate_earmarks_clean_v1.csv")
+}
+
+```
+
+## House Earmarks - Processed in Claude and brought in here 
+```{r}
+# Raw data uploaded to Claude, prompted, cleaned and pasted here -> https://docs.google.com/spreadsheets/d/19oGMbPMJAz0ZAPNChvzX5AHlgaHhZcb4R6CpIS8jLNM/edit?gid=142064248#gid=142064248
+
+house_earmarks_clean <- read_sheet("https://docs.google.com/spreadsheets/d/19oGMbPMJAz0ZAPNChvzX5AHlgaHhZcb4R6CpIS8jLNM/edit?gid=142064248#gid=142064248")
+
+write.csv(house_earmarks_clean, "clean-data/house_earmarks_clean_v1.csv")
+
+```
+
+
+## Cleaning and Combining for using alongside existing data 
+```{r}
+house_earmarks_prep <- house_earmarks_clean %>%
+                       filter(str_detect(Account, "State Revolving Fund"))%>%
+                       rename(House_Requestor = Requestor)%>%
+                       mutate(Originiation = "H")%>%
+                       mutate(Senate_Requestor = "")%>%
+                       mutate(Amount = as.character(Amount))
+
+senate_earmarks_prep <- senate_earmarks_clean %>%
+                        filter(str_detect(Account, "State Revolving Fund"))%>%
+                        rename(Senate_Requestor = Requestor)%>%
+                        mutate(Originiation = "S")%>%
+                        mutate(House_Requestor = "")%>%
+                       mutate(Amount = str_remove_all(Amount, ","))
+
+# combining and saving 
+## QA
+earmarks_25 <- bind_rows(senate_earmarks_prep,house_earmarks_prep)
+
+write.csv(earmarks_25, "clean-data/earmarks_25_v1.csv")
+
+```
+## Ingesting and Saving Cap Allotments
+```{r}
+cw_25_cap <- read_sheet( "https://docs.google.com/spreadsheets/d/1o4n-orXTnQer7eDshVghDJwsJ2fgfTuOOwy1IV9zuBM/edit?gid=0#gid=0", "CW_25_cap")%>%
+             select(-c(`Total Funds`))
+
+write.csv(cw_25_cap, "clean-data/cw_25_cap_v1.csv", row.names = FALSE)
+
+dw_25_cap <- read_sheet( "https://docs.google.com/spreadsheets/d/1o4n-orXTnQer7eDshVghDJwsJ2fgfTuOOwy1IV9zuBM/edit?gid=0#gid=0", "DW_25_cap")
+
+write.csv(dw_25_cap, "clean-data/dw_25_cap_v1.csv", row.names = FALSE)
+
+
+```
+
+

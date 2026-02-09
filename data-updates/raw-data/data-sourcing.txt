@@ -1,0 +1,11 @@
+Senate Earmarks: fy26_interior_cds.pdf
+downloaded from https://www.appropriations.senate.gov/imo/media/doc/fy26_interior_cds.pdf 
+
+House Earmarks: fy26-interior-environment-and-related-agencies-cpf-table-updated.pdf
+downloaded from https://appropriations.house.gov/sites/evo-subsites/republicans-appropriations.house.gov/files/evo-media-document/fy26-interior-environment-and-related-agencies-cpf-table-updated.pdf
+
+CW Awards - CW Assistance Agreement Detail Report_20260112.xlsx
+https://sdwis.epa.gov/ords/sfdw_pub/r/sfdw/owsrf_public/cw-assistance-agreement-report-results
+
+DW Awards Drinking Water Assistance Agreement Detail Report_20260112.xlsx
+https://sdwis.epa.gov/ords/sfdw_pub/r/sfdw/owsrf_public/dw-assistance-agreement-report-results

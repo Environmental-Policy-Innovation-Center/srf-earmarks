@@ -6,6 +6,10 @@
 #              for multiple states. It compares a baseline scenario against a
 #              scenario that includes federal earmarks to analyze the net financial
 #              impact on program funds over a 20-year projection period.
+
+## UPDATED BY GW FOR 2025/2026 Data Feb 13 2026 
+## GW: NOTE THAT CURRENT SETUP IS TO RUN 2025 AS HISTORICAL. 
+## To run 2026 earmarks - swap historical/projection years in time period definitions & in projection_years
 # ==============================================================================
 
 # --- Load Required Libraries ---
@@ -422,6 +426,8 @@ waterfall <- impact %>%
     ), levels = c("Positive Net Impact", "Negative Net Impact"))
   )
 
+write.csv(waterfall, "results-updates/4_CW_waterfall_26.csv", row.names = FALSE)
+
 # --- Legend Order Definitions ---
 marker_legend_order <- c(
   "Total Earmarks", "Repayment Loss", "Positive Net Impact", "Negative Net Impact"
@@ -495,7 +501,7 @@ cw_waterfall_plot <- ggplot(waterfall, aes(y = state)) +
   )
 
 # --- Save Final Output ---
-output_plot_filename <- "cw_waterfall_plot_25.png"
+output_plot_filename <- "results-updates/cw_waterfall_plot_26.png"
 ggsave(
   filename = output_plot_filename,
   plot = cw_waterfall_plot,

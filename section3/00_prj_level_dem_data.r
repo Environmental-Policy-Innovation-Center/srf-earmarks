@@ -5,6 +5,7 @@
 # It fetches data from the U.S. Census, loads project data, matches each
 # project to a Census-defined place, and exports the final combined dataset.
 
+## UPDATED BY GW FOR 2025/2026 Data Feb 13 2026 
 # Methods explained in Appendix of report
 # =============================================================================
 
@@ -39,7 +40,7 @@ get_census_places <- function(state_abbr) {
     geography = "place",
     variables = vars,
     state = state_abbr,
-    year = 2022,
+    year = 2023,
     survey = "acs5",
     output = "wide"
   ) %>%

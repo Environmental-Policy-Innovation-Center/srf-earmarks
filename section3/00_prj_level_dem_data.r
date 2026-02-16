@@ -147,6 +147,20 @@ earmarks_25 <- read.csv("data-updates/clean-data/earmarks_25_v1.csv") %>%
   mutate(state_abbr = as.character(state_abbr))%>%
   mutate(description = as.character(description))
 
+## 2026 
+earmarks_26 <- read.csv("data-updates/clean-data/earmarks_26_v1.csv") %>%
+  clean_names() %>%
+  mutate(
+    program = case_when(
+      str_detect(account, "Drinking Water") ~ "DW",
+      str_detect(account, "Clean Water") ~ "CW",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  transmute(state_abbr = state, description = project, type = "earmark", program, fy = 26)%>%
+  mutate(state_abbr = as.character(state_abbr))%>%
+  mutate(description = as.character(description))
+
 
 # Load Drinking Water (DW) SRF Data
 dw_srf_23 <- read_excel("section3/raw_data/National_Drinking Water Assistance Agreement Detail Report_FY23.xlsx", skip = 4) %>%
@@ -163,6 +177,8 @@ dw_srf_25 <- read_excel("data-updates/raw-data/Drinking Water Assistance Agreeme
   clean_names() %>%
   mutate(state_abbr = state2abbr(state)) %>%
   transmute(state_abbr, description = city, type = "srf", program = "DW", fy = 25)
+
+## ADD IN FY 2026 Earmarks ## 
 
 # Load Clean Water (CW) SRF Data
 cw_srf_23 <- read_excel("section3/raw_data/FY23_CW Assistance Agreement Detail Report_20250704.xlsx", skip = 4) %>%
@@ -181,7 +197,7 @@ cw_srf_25 <- read_excel("data-updates/raw-data/CW Assistance Agreement Detail Re
   transmute(state_abbr, description = borrower_name, type = "srf", program = "CW", fy = 25)
 
 # Combine all project data sources
-all_projects_raw <- bind_rows(earmarks_23, earmarks_24, earmarks_25, dw_srf_23, dw_srf_24, dw_srf_25, cw_srf_23, cw_srf_24, cw_srf_25)
+all_projects_raw <- bind_rows(earmarks_23, earmarks_24, earmarks_25, earmarks_26, dw_srf_23, dw_srf_24, dw_srf_25, cw_srf_23, cw_srf_24, cw_srf_25)
 
 # Add initial counter  
 count_initial_rows <- nrow(all_projects_raw)
@@ -248,4 +264,4 @@ message("---\n")
 
 
 # Export the final dataset to a CSV file
-write_csv(final_project_data, "section3/raw_data/prj_level_dem_data_fy_2025_update.csv") 
+write_csv(final_project_data, "section3/raw_data/prj_level_dem_data_fy_2026_update.csv") 

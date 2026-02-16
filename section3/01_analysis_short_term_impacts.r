@@ -205,7 +205,7 @@ state_shifts_data <- srf_funding_data %>%
   arrange(total_difference) %>%
   mutate(state = factor(state, levels = unique(state)))
 
-#write.csv(state_shifts_data, "results-updates/fig_2_state_shifts_data_26.csv", row.names = FALSE)
+write.csv(state_shifts_data, "results-updates/fig_2_state_shifts_data_26.csv", row.names = FALSE)
 
 plot_fig2 <- ggplot(state_shifts_data, aes(x = state, y = total_difference, fill = impact_type)) +
   geom_col(width = 0.75) +

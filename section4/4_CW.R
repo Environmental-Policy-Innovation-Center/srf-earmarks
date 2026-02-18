@@ -8,8 +8,8 @@
 #              impact on program funds over a 20-year projection period.
 
 ## UPDATED BY GW FOR 2025/2026 Data Feb 13 2026 
-## GW: NOTE THAT CURRENT SETUP IS TO RUN 2025 AS HISTORICAL. 
-## To run 2026 earmarks - swap historical/projection years in time period definitions & in projection_years
+## GW: NOTE THAT CURRENT SETUP IS TO RUN 2026 AS HISTORICAL. 
+## To run 2025 earmarks - swap historical/projection years in time period definitions & in projection_years
 # ==============================================================================
 
 # --- Load Required Libraries ---
@@ -44,9 +44,9 @@ config <- list(
   repayment_start_lag = 3,     # Years between loan execution and first repayment
   
   # Time period definitions
-  historical_years = 2000:2025,   # Years for historical data analysis
-  projection_years = 2026:2045,   # Years for future cash flow modeling
-  baseline_period = 2003:2022,    # Historical years used to calculate future averages
+  historical_years = 2000:2026,   # Years for historical data analysis
+  projection_years = 2027:2045,   # Years for future cash flow modeling
+  baseline_period = 2003:2025,    # Historical years used to calculate future averages
   exclude_years = 2009            # Year(s) to exclude from baseline calculation (e.g., financial crisis)
 )
 
@@ -213,7 +213,7 @@ create_projections <- function(historical_data) {
   # Project earmarks based on a more recent period (e.g., last 2 years).
   ## updated to 2025
   recent_earmarks <- historical_data %>%
-    filter(year %in% 2023:2025) %>%
+    filter(year %in% c(2023,2024,2026)) %>%
     summarise(
       avg_earmarks = mean(earmarks, na.rm = TRUE),
       avg_impact = mean(earmark_impact, na.rm = TRUE)
@@ -405,7 +405,7 @@ state_summary_table <- impact %>%
     `Loss-to-Gain Ratio` = paste0(round(abs(net_financial_impact)/abs(net_funding_change), 2), ":1")
   )
 
-#write_csv(state_summary_table, "4_CW_state_summary.csv")
+write_csv(state_summary_table, "results-updates/4_CW_state_summary_26.csv")
 
 
 ## --- Waterfall Plot Generation ---
@@ -499,6 +499,8 @@ cw_waterfall_plot <- ggplot(waterfall, aes(y = state)) +
       override.aes = list(shape = c(8, NA, 18, 18), linetype = c("blank", "solid", "blank", "blank"))
     )
   )
+
+print(cw_waterfall_plot)
 
 # --- Save Final Output ---
 output_plot_filename <- "results-updates/cw_waterfall_plot_26.png"

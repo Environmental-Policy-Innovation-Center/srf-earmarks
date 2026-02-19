@@ -141,6 +141,7 @@ srf_funding_data <- allotments %>%
     bar_color = ifelse(difference > 0,"Positive","Negative")
   )
 
+## Important file for following scripts 
 #write.csv(srf_funding_data,"data-updates/clean-data/srf_funding_data_update_fy26.csv", row.names = FALSE)
 
 # --- 2.2 Project-Level Demographic Data (For Section 3.2) ---

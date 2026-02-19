@@ -142,7 +142,7 @@ calculate_loan_payment <- function(principal, annual_rate_pct, term_years) {
 load_state_data <- function(state_abbr) {
   # --- Load Earmarks Data ---
   # Assumes a CSV file named 'earmarks_data.csv' exists in 'raw_data/'.
-  earmarks_data <- read.csv("data-updates/clean-data/srf_funding_data_v1.csv") %>%
+  earmarks_data <- read.csv("data-updates/clean-data/srf_funding_data_update_fy26.csv") %>%
     mutate(state_abbr = if_else(is.na(state_abbr),
                                 state.abb[match(state, state.name)], # Convert state name to abbreviation if needed
                                 state_abbr)) %>%
@@ -405,7 +405,7 @@ state_summary_table <- impact %>%
     `Loss-to-Gain Ratio` = paste0(round(abs(net_financial_impact)/abs(net_funding_change), 2), ":1")
   )
 
-#write_csv(state_summary_table, "results-updates/section4/CW/4_CW_state_summary_26.csv")
+write_csv(state_summary_table, "results-updates/section4/CW/4_CW_state_summary_26.csv")
 
 
 ## --- Waterfall Plot Generation ---
@@ -426,7 +426,7 @@ waterfall <- impact %>%
     ), levels = c("Positive Net Impact", "Negative Net Impact"))
   )
 
-#write.csv(waterfall, "results-updates/section4/CW/4_CW_waterfall_26.csv", row.names = FALSE)
+write.csv(waterfall, "results-updates/section4/CW/4_CW_waterfall_26.csv", row.names = FALSE)
 
 # --- Legend Order Definitions ---
 marker_legend_order <- c(
@@ -502,16 +502,16 @@ cw_waterfall_plot <- ggplot(waterfall, aes(y = state)) +
 
 #print(cw_waterfall_plot)
 
-# --- Save Final Output ---
-# output_plot_filename <- "results-updates/section4/CW/cw_waterfall_plot_26.png"
-# ggsave(
-#   filename = output_plot_filename,
-#   plot = cw_waterfall_plot,
-#   width = 6,
-#   height = 10,
-#   units = "in",
-#   dpi = 300
-# )
+#--- Save Final Output ---
+output_plot_filename <- "results-updates/section4/CW/cw_waterfall_plot_26.png"
+ggsave(
+  filename = output_plot_filename,
+  plot = cw_waterfall_plot,
+  width = 6,
+  height = 10,
+  units = "in",
+  dpi = 300
+)
 
 cat_palette <- colorRampPalette(c("#172f60","#1054a8",
                                   "#791a7b","#de9d29",
@@ -610,17 +610,17 @@ for (state_abbr in all_states) {
       plot.background  = element_rect(fill = "white", color = NA)
     )
   
-  # --- Save Chart ---
-  # ggsave(
-  #   filename = paste0("results-updates/section4/CW/state_repayment_graphs/",
-  #                     state_abbr, "_repayment_chart_26.png"),
-  #   plot   = state_plot,
-  #   width  = 10,
-  #   height = 8,
-  #   units  = "in",
-  #   dpi    = 600
-  # )
-  # 
+  #--- Save Chart ---
+  ggsave(
+    filename = paste0("results-updates/section4/CW/state_repayment_graphs/",
+                      state_abbr, "_repayment_chart_26.png"),
+    plot   = state_plot,
+    width  = 10,
+    height = 8,
+    units  = "in",
+    dpi    = 600
+  )
+
   message("Saved chart and data for: ", state_abbr)
 }
 

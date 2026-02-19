@@ -1,0 +1,34 @@
+##### Update Readme ##### 
+##### Created by GW Feb 19th ####
+##### Questions? Contact gabe@policyinnovation.org
+#### See readme.txt for general project details - this document covers updates for FY25/FY26 #### 
+
+
+##################################
+### Changes from Original Code #### 
+##################################
+
+### Created 
+##  data-updates/data-updates.Rmd
+##  - contains scripts for processing in earmarks for FY26 House and Senate, in addition to creating 'synthetic' 2026 allotment data. 
+##  data-updates/raw-data
+##  - stores respective raw data (caps, state awards and assistance agreement reports for 2025)
+##  data-updates/clean-data
+##  - stores clean data processed from data-updates.Rmd
+
+## Altered 
+## 00_prj_level_dem_data.R
+## - Changes file paths to consume additional earmarks and awards data
+## - writes out new demographic file given data changes
+## - NOTE that this contains synthetic allotments for 2026 & dummy 2025 earmarks data given there were no earmarks in 2025
+## 01_analysis_short_term_impacts.r 
+## - updated filepaths to data/updates folder 
+## - updated graphs - fy[year] indicates what year of data has been run 
+## 4_DW.R
+## - Tweaked config formulas and earmarks years to advance 1 year
+## - added all 50 states
+## - created loop for generating repayment data for all states
+## 4_CW.R
+## - Tweaked config formulas and earmarks years to advance 1 year
+## - added all 50 states
+## - created loop for generating repayment data for all states

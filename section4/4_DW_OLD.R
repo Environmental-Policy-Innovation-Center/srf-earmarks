@@ -418,7 +418,7 @@ waterfall <- impact %>%
     ), levels = c("Positive Net Impact", "Negative Net Impact"))
   )
 
-write.csv(waterfall,"waterfall_OLD.csv", row.names = FALSE)
+#write.csv(waterfall,"waterfall_OLD.csv", row.names = FALSE)
 
 # --- Legend Order Definitions ---
 marker_legend_order <- c(
@@ -520,8 +520,8 @@ me_repayment_comparison <- all_state_results %>%
       TRUE ~ scenario
     )
   )
-
-repayment_wide <- 
+#target_states = c("AK", "CT", "FL", "IL", "MD", "ME", "OK", "OR", "TX", "WA"),
+#repayment_wide <- 
 
 repayment_summary <- me_repayment_comparison %>%
                 group_by(scenario)%>%

@@ -141,7 +141,7 @@ srf_funding_data <- allotments %>%
     bar_color = ifelse(difference > 0,"Positive","Negative")
   )
 
-write.csv(srf_funding_data,"data-updates/clean-data/srf_funding_data_update_fy26.csv", row.names = FALSE)
+#write.csv(srf_funding_data,"data-updates/clean-data/srf_funding_data_update_fy26.csv", row.names = FALSE)
 
 # --- 2.2 Project-Level Demographic Data (For Section 3.2) ---
 # NOTE: This section loads a pre-processed CSV file for efficiency.
@@ -189,7 +189,7 @@ plot_fig1 <- ggplot(summary_plot_data, aes(x = year, y = total_pct, fill = categ
   report_theme
 
 print(plot_fig1)
-ggsave("results-updates/report_figure_1_fy26.png", plot = plot_fig1, width = 8, height = 6, dpi = 200, units = "in")
+ggsave("results-updates/section3/report_figure_1_fy26.png", plot = plot_fig1, width = 8, height = 6, dpi = 200, units = "in")
 
 # --- 3.1 STATE-LEVEL SHIFTS (REPORT FIGURE 2) ---
 message("\nGenerating Figure 2: State-Level Net Funding Changes...")
@@ -205,7 +205,7 @@ state_shifts_data <- srf_funding_data %>%
   arrange(total_difference) %>%
   mutate(state = factor(state, levels = unique(state)))
 
-write.csv(state_shifts_data, "results-updates/fig_2_state_shifts_data_26.csv", row.names = FALSE)
+write.csv(state_shifts_data, "results-updates/section3/fig_2_state_shifts_data_26.csv", row.names = FALSE)
 
 plot_fig2 <- ggplot(state_shifts_data, aes(x = state, y = total_difference, fill = impact_type)) +
   geom_col(width = 0.75) +
@@ -232,7 +232,7 @@ plot_fig2 <- ggplot(state_shifts_data, aes(x = state, y = total_difference, fill
 
 
 print(plot_fig2)
-#ggsave("results-updates/report_figure_26_v2.png", plot = plot_fig2, width = 8, height = 8, dpi = 300)
+ggsave("results-updates/section3/report_figure_26_v2.png", plot = plot_fig2, width = 8, height = 8, dpi = 300)
 
 
 # --- 3.2 PROJECT-LEVEL SHIFTS (REPORT FIGURES 3-6) ---
@@ -259,7 +259,7 @@ plot_fig3 <- create_demographic_plot(
   "Population (under 50k)"
 )
 print(plot_fig3)
-ggsave("results-updates/report_figure_3_fy26.png", plot = plot_fig3, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/section3/report_figure_3_fy26.png", plot = plot_fig3, width = 8, height = 6, dpi = 300)
 
 # Figure 4: Median Household Income
 plot_fig4 <- create_demographic_plot(
@@ -268,7 +268,7 @@ plot_fig4 <- create_demographic_plot(
   "Median Household Income ($)"
 )
 print(plot_fig4)
-ggsave("results-updates/report_figure_4_fy26.png", plot = plot_fig4, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/section3/report_figure_4_fy26.png", plot = plot_fig4, width = 8, height = 6, dpi = 300)
 
 # Figure 5: Poverty Rate
 plot_fig5 <- create_demographic_plot(
@@ -277,7 +277,7 @@ plot_fig5 <- create_demographic_plot(
   "Percent Below Poverty Level"
 )
 print(plot_fig5)
-ggsave("results-updates/report_figure_5_fy26.png", plot = plot_fig5, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/section3/report_figure_5_fy26.png", plot = plot_fig5, width = 8, height = 6, dpi = 300)
 
 # Figure 6: People of Color
 plot_fig6 <- create_demographic_plot(
@@ -286,7 +286,7 @@ plot_fig6 <- create_demographic_plot(
   "Percent People of Color"
 )
 print(plot_fig6)
-ggsave("results-updates/report_figure_6_fy26.png", plot = plot_fig6, width = 8, height = 6, dpi = 300)
+ggsave("results-updates/section3/report_figure_6_fy26.png", plot = plot_fig6, width = 8, height = 6, dpi = 300)
 
 
 # --- 3.4 PRINCIPAL FORGIVENESS (PF) IMPACT (REPORT FIGURE 7) ---
@@ -324,7 +324,7 @@ pf_impact_data <- srf_funding_data %>%
                          "total_max_pf_impact" = "Maximum Impact")
   )
 
-write.csv(pf_impact_data,"results-updates/fig_7_pf_impact_data_fy26.csv", row.names = FALSE)
+write.csv(pf_impact_data,"results-updates/section3/fig_7_pf_impact_data_fy26.csv", row.names = FALSE)
 
 plot_fig7 <- ggplot(pf_impact_data, aes(x = reorder(state, impact_value), y = impact_value / 1e6, fill = impact_type)) +
   geom_chicklet(position = "dodge", alpha = 0.9) +
@@ -340,7 +340,7 @@ plot_fig7 <- ggplot(pf_impact_data, aes(x = reorder(state, impact_value), y = im
   theme(panel.grid.major.y = element_blank(), axis.text.y = element_text(size = 14))
 
 print(plot_fig7)
-#ggsave("results-updates/report_figure_7_fy26.png", plot = plot_fig7, width = 12, height = 14, dpi = 100)
+ggsave("results-updates/section3/report_figure_7_fy26.png", plot = plot_fig7, width = 12, height = 14, dpi = 100)
 
 # =============================================================================
 # END OF SCRIPT

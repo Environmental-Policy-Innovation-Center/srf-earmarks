@@ -45,12 +45,12 @@ config <- list(
   repayment_start_lag = 3,     # Years between loan execution and first repayment
   
   # Time period definitions
-  # Time period definitions
   historical_years = 2000:2026,   # Years for historical data analysis
-  projection_years = 2027:2045,   # Years for future cash flow modeling
-  baseline_period = 2003:2025,    # Historical years used to calculate future averages
-  exclude_years = 2009    # Year(s) to exclude from baseline calculation (e.g., financial crisis)
+  projection_years = 2027:2046,   # Years for future cash flow modeling
+  baseline_period = 2003:2022,    # Historical years used to calculate future averages
+  exclude_years = 2009            # Year(s) to exclude from baseline calculation (e.g., financial crisis)
 )
+
 
 # ==============================================================================
 # ---- 2. Load All Excel Files ----
@@ -407,7 +407,7 @@ state_summary_table <- impact %>%
     `Loss-to-Gain Ratio` = paste0(round(abs(net_financial_impact)/abs(net_funding_change), 2), ":1")
   )
 
-write_csv(state_summary_table, "results-updates/4_DW_state_summary_26.csv")
+#write_csv(state_summary_table, "results-updates/section4/DW/4_DW_state_summary_26.csv")
 
 
 #### Waterfall Plot Generation ####
@@ -428,7 +428,7 @@ waterfall <- impact %>%
     ), levels = c("Positive Net Impact", "Negative Net Impact"))
   )
 
-write.csv(waterfall, "results-updates/4_DW_waterfall_26.csv", row.names = FALSE)
+#write.csv(waterfall, "results-updates/section4/DW/4_DW_waterfall_26.csv", row.names = FALSE)
 
 # --- Legend Order Definitions ---
 marker_legend_order <- c(
@@ -504,7 +504,7 @@ dw_waterfall_plot <- ggplot(waterfall, aes(y = state)) +
 print(dw_waterfall_plot)
 
 #--- Save Final Output ---
-output_plot_filename <- "results-updates/dw_waterfall_plot_26.png"
+output_plot_filename <- "results-updates/section4/DW/dw_waterfall_plot_26.png"
 ggsave(
   filename = output_plot_filename,
   plot = dw_waterfall_plot,
@@ -518,94 +518,117 @@ print(dw_waterfall_plot)
 
 ##### Maine Plot ####
 
-# --- Data Preparation for Alaska Separate Lines ---
-me_repayment_comparison <- all_state_results %>%
-  filter(
-    state == "ME",
-    year %in% config$projection_years,
-    scenario %in% c("Baseline", "With Earmarks")
-  ) %>%
-  select(year, scenario, repayments) %>%
-  mutate(
-    scenario = case_when(
-      scenario == "Baseline" ~ "Without_Earmarks",
-      scenario == "With Earmarks" ~ "With_Earmarks",
-      TRUE ~ scenario
-    )
-  )
+## Generating State Based Repayment Plots ## 
+# --- Create output directories if they don't exist ---
 
-# EPIC color palette - categorical
 cat_palette <- colorRampPalette(c("#172f60","#1054a8",
                                   "#791a7b","#de9d29",
                                   "#b15712","#4ea324"))
 
-# --- Create the EPIC Compliant Comparison Plot ---
-me_comparison_plot_compliant <- 
-  ggplot(me_repayment_comparison, aes(x = year, y = repayments, color = scenario, linetype = scenario)) +
-  # Add lines and points for both scenarios
-  geom_line(linewidth = 1.1) +
-  geom_point(size = 2.5) +
-  
-  # Define colors - green for Without, transparent red-brown for With
-  scale_color_manual(
-    values = c("Without_Earmarks" = "#4ea324", "With_Earmarks" = "#b15712"),
-    labels = c("Without_Earmarks" = "Without Earmarks", "With_Earmarks" = "With Earmarks"),
-    name = NULL
-  ) +
-  scale_linetype_manual(
-    values = c("Without_Earmarks" = "solid", "With_Earmarks" = "solid"),
-    labels = c("Without_Earmarks" = "Without Earmarks", "With_Earmarks" = "With Earmarks"),
-    name = NULL
-  ) +
-  
-  # Format axes
-  scale_y_continuous(
-    labels = label_dollar(scale = 1e-6, suffix = "M"),
-    limits = c(0, NA)
-  ) +
-  scale_x_continuous(breaks = scales::pretty_breaks(n = 8)) +
-  
-  # Labels without plot title/subtitle per style guide
-  labs(
-    y = "Annual Repayments (in Millions)",
-    x = "Year"
-  ) +
-  
-  # Apply EPIC's chart theme with larger font sizes
-  theme_minimal() + 
-  theme(
-    # All text elements are now set to a larger size
-    text = element_text(size = 25, family = "Lato"),
-    legend.text = element_text(size = 25, family = "Lato"),
-    
-    axis.text.x = element_text(size = 25, margin = margin(t = 10, r = 0, b = 0, l = 0)),
-    axis.title.x = element_text(size = 25, margin = margin(t = 10, r = 0, b = 0, l = 0)),
-    axis.text.y = element_text(size = 25, margin = margin(t = 0, r = 10, b = 0, l = 0)),
-    axis.title.y = element_text(size = 25, margin = margin(t = 0, r = 5, b = 0, l = 0)),
-    
-    # Legend in lower left corner, smaller box, no title
-    legend.position = c(0.02, 0.02),
-    legend.justification = c(0, 0),
-    legend.background = element_rect(fill = "white", color = "grey90", size = 0.3),
-    legend.margin = margin(t = 4, r = 6, b = 4, l = 6),
-    legend.box.spacing = unit(0, "pt"),
-    
-    # Grid styling (EPIC keeps major grid lines)
-    panel.grid.major = element_line(color = "#E5E5E5"),
-    panel.grid.minor = element_blank(),
-    plot.background = element_rect(fill = "white", color = NA)
-  )
+dir.create("results-updates/section4/DW/state_repayment_graphs", recursive = TRUE, showWarnings = FALSE)
+dir.create("results-updates/section4/DW/state_repayment_data", recursive = TRUE, showWarnings = FALSE)
 
-# # --- Save the New Plot with adjusted dimensions ---
-# ggsave(
-#   filename = "me_dwsrf_repayment_comparison_compliant_25.png",
-#   plot = me_comparison_plot_compliant,
-#   width = 10,
-#   height = 8,
-#   units = "in",
-#   dpi = 600 # DPI set to 600 per style guide
-# )
+# --- Get unique states from all_state_results ---
+all_states <- unique(all_state_results$state)
 
-# Optional: Print the plot to view it
-print(me_comparison_plot_compliant)
+# --- Loop over all states ---
+for (state_abbr in all_states) {
+  
+  # --- Data Preparation ---
+  state_repayment_comparison <- all_state_results %>%
+    filter(
+      state == state_abbr,
+      year %in% config$projection_years,
+      scenario %in% c("Baseline", "With Earmarks")
+    ) %>%
+    select(year, scenario, repayments) %>%
+    mutate(
+      scenario = case_when(
+        scenario == "Baseline"      ~ "Without_Earmarks",
+        scenario == "With Earmarks" ~ "With_Earmarks",
+        TRUE                        ~ scenario
+      )
+    )
+  
+  # Skip if no data for this state
+  if (nrow(state_repayment_comparison) == 0) {
+    message("No data for state: ", state_abbr, " — skipping.")
+    next
+  }
+  
+  # --- Save CSV ---
+  # write.csv(
+  #   state_repayment_comparison,
+  #   file = paste0("results-updates/section4/DW/state_repayment_data/",
+  #                 state_abbr, "_repayment_data_26.csv"),
+  #   row.names = FALSE
+  # )
+  # 
+  # --- Create Plot ---
+  state_plot <- ggplot(
+    state_repayment_comparison,
+    aes(x = year, y = repayments, color = scenario, linetype = scenario)
+  ) +
+    geom_line(linewidth = 1.1) +
+    geom_point(size = 2.5) +
+    
+    scale_color_manual(
+      values = c("Without_Earmarks" = "#4ea324", "With_Earmarks" = "#b15712"),
+      labels = c("Without_Earmarks" = "Without Earmarks", "With_Earmarks" = "With Earmarks"),
+      name = NULL
+    ) +
+    scale_linetype_manual(
+      values = c("Without_Earmarks" = "solid", "With_Earmarks" = "solid"),
+      labels = c("Without_Earmarks" = "Without Earmarks", "With_Earmarks" = "With Earmarks"),
+      name = NULL
+    ) +
+    
+    scale_y_continuous(
+      labels = label_dollar(scale = 1e-6, suffix = "M"),
+      limits = c(0, NA)
+    ) +
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 8)) +
+    
+    labs(
+      y = "Annual Repayments (in Millions)",
+      x = "Year"
+    ) +
+    
+    theme_minimal() +
+    theme(
+      text          = element_text(size = 25, family = "Lato"),
+      legend.text   = element_text(size = 25, family = "Lato"),
+      
+      axis.text.x   = element_text(size = 25, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+      axis.title.x  = element_text(size = 25, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+      axis.text.y   = element_text(size = 25, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+      axis.title.y  = element_text(size = 25, margin = margin(t = 0, r = 5,  b = 0, l = 0)),
+      
+      legend.position    = c(0.02, 0.02),
+      legend.justification = c(0, 0),
+      legend.background  = element_rect(fill = "white", color = "grey90", size = 0.3),
+      legend.margin      = margin(t = 4, r = 6, b = 4, l = 6),
+      legend.box.spacing = unit(0, "pt"),
+      
+      panel.grid.major = element_line(color = "#E5E5E5"),
+      panel.grid.minor = element_blank(),
+      plot.background  = element_rect(fill = "white", color = NA)
+    )
+  
+  # --- Save Chart ---
+  # ggsave(
+  #   filename = paste0("results-updates/section4/DW/state_repayment_graphs/",
+  #                     state_abbr, "_repayment_chart_26.png"),
+  #   plot   = state_plot,
+  #   width  = 10,
+  #   height = 8,
+  #   units  = "in",
+  #   dpi    = 600
+  # )
+  
+  message("Saved chart and data for: ", state_abbr)
+}
+
+message("Done! Processed ", length(all_states), " states.")
+
 

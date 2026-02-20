@@ -411,7 +411,7 @@ write_csv(state_summary_table, "results-updates/section4/CW/4_CW_state_summary_2
 ## --- Waterfall Plot Generation ---
 # --- Waterfall Data Preparation ---
 waterfall <- impact %>%
-  filter(earmark_amount > 0) %>%
+#  filter(earmark_amount > 0) %>%
   arrange(net_financial_impact) %>%
   mutate(
     state = fct_inorder(state),
@@ -426,7 +426,7 @@ waterfall <- impact %>%
     ), levels = c("Positive Net Impact", "Negative Net Impact"))
   )
 
-write.csv(waterfall, "results-updates/section4/CW/4_CW_waterfall_26.csv", row.names = FALSE)
+#write.csv(waterfall, "results-updates/section4/CW/4_CW_waterfall_26.csv", row.names = FALSE)
 
 # --- Legend Order Definitions ---
 marker_legend_order <- c(
